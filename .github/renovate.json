@@ -21,14 +21,11 @@
                 "docker"
             ],
             "matchPackageNames": [
-                "registry.access.redhat.com/ubi8/ubi",
                 "registry.access.redhat.com/ubi9/ubi",
                 "registry.access.redhat.com/ubi10/ubi"
             ],
             "matchFileNames": [
-                "rhel8/Dockerfile",
-                "rhel9/Dockerfile",
-                "rhel10/Dockerfile"
+                "rhel/versions.yaml"
             ],
             "groupName": "RHEL UBI base images",
             "groupSlug": "rhel-ubi-base-images",
@@ -48,16 +45,6 @@
             "additionalBranchPrefix": "",
             "commitMessageTopic": "Rocky Linux base images",
             "commitMessageSuffix": ""
-        },
-        {
-            "matchDatasources": [
-                "docker"
-            ],
-            "matchPackageNames": [
-                "rockylinux/rockylinux"
-            ],
-            "matchCurrentValue": "/^8\\./",
-            "allowedVersions": "/^8\\.\\d+-ubi$/"
         },
         {
             "matchDatasources": [
@@ -175,6 +162,16 @@
         }
     ],
     "customManagers": [
+        {
+            "customType": "regex",
+            "managerFilePatterns": [
+                "rhel/versions.yaml"
+            ],
+            "matchStrings": [
+                "base_image:\\s*(?<depName>[^:]+):(?<currentValue>[^\\s]+)"
+            ],
+            "datasourceTemplate": "docker"
+        },
         {
             "customType": "regex",
             "managerFilePatterns": [

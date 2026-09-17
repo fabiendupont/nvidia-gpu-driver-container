@@ -54,7 +54,7 @@ OUT_IMAGE_TAG = $(OUT_IMAGE_VERSION)-$(OUT_DIST)
 OUT_IMAGE = $(OUT_IMAGE_NAME):$(OUT_IMAGE_TAG)
 
 ##### Public rules #####
-DISTRIBUTIONS := ubuntu22.04 ubuntu24.04 ubuntu26.04 signed_ubuntu22.04 signed_ubuntu24.04 signed_ubuntu26.04 rhel8 rhel9 rhel10 rocky8 rocky9 rocky10 precompiled_rhcos
+DISTRIBUTIONS := ubuntu22.04 ubuntu24.04 ubuntu26.04 signed_ubuntu22.04 signed_ubuntu24.04 signed_ubuntu26.04 rhel9 rhel10 rocky9 rocky10 precompiled_rhcos
 RHCOS_VERSIONS := rhcos4.18 rhel9.6 rhel9.8
 PUSH_TARGETS := $(patsubst %, push-%, $(DISTRIBUTIONS))
 BASE_FROM := resolute noble jammy
@@ -83,6 +83,10 @@ include $(CURDIR)/multi-arch.mk
 else
 include $(CURDIR)/native-only.mk
 endif
+
+.PHONY: generate
+generate:
+	python3 $(CURDIR)/scripts/generate-rhel-dockerfiles.py
 
 pull-%: DIST = $(word 2,$(subst -, ,$@))
 pull-%: DRIVER_VERSION = $(word 3,$(subst -, ,$@))
@@ -183,19 +187,23 @@ $(DRIVER_BUILD_TARGETS):
 				--file $(DOCKERFILE) \
 				$(CURDIR)/$(SUBDIR)
 
-build-rhcos%: SUBDIR = rhel9
+build-rhel9%: generate
+build-rhel9%: SUBDIR = rhel/9
+build-rhel10%: generate
+build-rhel10%: SUBDIR = rhel/10
+build-rhcos%: generate
+build-rhcos%: SUBDIR = rhel/9
 
 # The rocky targets reuse the rhel Dockerfiles with a Rocky Linux base image.
 # We use the -ubi image flavor published by the Rocky Enterprise Software
 # Foundation: its package set mirrors the Red Hat UBI images that the rhel
 # Dockerfiles are written against, so the same Dockerfile works unmodified.
-build-rocky8%: SUBDIR = rhel8
-build-rocky8%: DOCKER_BUILD_ARGS = --build-arg BASE_IMAGE=rockylinux/rockylinux:8.10-ubi
-
-build-rocky9%: SUBDIR = rhel9
+build-rocky9%: generate
+build-rocky9%: SUBDIR = rhel/9
 build-rocky9%: DOCKER_BUILD_ARGS = --build-arg BASE_IMAGE=rockylinux/rockylinux:9.8-ubi
 
-build-rocky10%: SUBDIR = rhel10
+build-rocky10%: generate
+build-rocky10%: SUBDIR = rhel/10
 build-rocky10%: DOCKER_BUILD_ARGS = --build-arg BASE_IMAGE=rockylinux/rockylinux:10.2-ubi
 
 # ubuntu22.04 Precompiled Driver
@@ -264,8 +272,8 @@ build-vgpuguest-%: DOCKERFILE = $(CURDIR)/$(SUBDIR)/Dockerfile
 build-vgpuguest-%: DRIVER_TAG = $(DRIVER_VERSION:-grid=)
 
 # Source of truth for RHEL and CoreOS compatibility https://access.redhat.com/articles/6907891
-build-vgpuguest-rhcos%: SUBDIR = rhel9
-build-vgpuguest-rhel9%: SUBDIR = rhel9
+build-vgpuguest-rhcos%: SUBDIR = rhel/9
+build-vgpuguest-rhel9%: SUBDIR = rhel/9
 
 
 $(VGPU_GUEST_DRIVER_BUILD_TARGETS):
@@ -312,8 +320,8 @@ build-vgpuhost-%: SUBDIR = $(word 3,$(subst -, ,$@))
 build-vgpuhost-%: DOCKERFILE = $(CURDIR)/vgpu-manager/$(SUBDIR)/Dockerfile
 
 # Source of truth for RHEL and CoreOS compatibility https://access.redhat.com/articles/6907891
-build-vgpuhost-rhcos%: SUBDIR = rhel9
-build-vgpuhost-rhel9%: SUBDIR = rhel9
+build-vgpuhost-rhcos%: SUBDIR = rhel/9
+build-vgpuhost-rhel9%: SUBDIR = rhel/9
 
 $(VGPU_HOST_DRIVER_BUILD_TARGETS):
 	DOCKER_BUILDKIT=1 \

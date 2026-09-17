@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2018-2026, NVIDIA CORPORATION. All rights reserved.
 
 GPU_DIRECT_RDMA_ENABLED="${GPU_DIRECT_RDMA_ENABLED:-false}"
 GDS_ENABLED="${GDS_ENABLED:-false}"

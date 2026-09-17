@@ -1,5 +1,5 @@
 #! /bin/bash -x
-# Copyright (c) 2026, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2018-2026, NVIDIA CORPORATION. All rights reserved.
 
 set -eu
 
@@ -16,7 +16,7 @@ TARGETARCH=${TARGETARCH:?"Missing TARGETARCH env"}
 USE_HOST_MOFED="${USE_HOST_MOFED:-false}"
 DNF_RELEASEVER=${DNF_RELEASEVER:-""}
 RHEL_VERSION=${RHEL_VERSION:-""}
-RHEL_MAJOR_VERSION=10
+RHEL_MAJOR_VERSION=@@RHEL_MAJOR@@
 RHEL_MINOR_VERSION=${RHEL_MINOR_VERSION:-""}
 KERNEL_MODULE_TYPE=${KERNEL_MODULE_TYPE:-auto}
 if [ "${DRIVER_BRANCH}" -ge 615 ] && [ "${KERNEL_MODULE_TYPE}" = "proprietary" ]; then
@@ -116,17 +116,17 @@ _install_prerequisites() (
 
     echo "Enabling RHOCP and EUS RPM repos..."
     if [ -n "${OPENSHIFT_VERSION:-}" ]; then
-        dnf config-manager --set-enabled rhocp-${OPENSHIFT_VERSION}-for-rhel-10-$DRIVER_ARCH-rpms || true
+        dnf config-manager --set-enabled rhocp-${OPENSHIFT_VERSION}-for-rhel-@@RHEL_MAJOR@@-$DRIVER_ARCH-rpms || true
         if ! dnf makecache --releasever=${DNF_RELEASEVER}; then
-            dnf config-manager --set-disabled rhocp-${OPENSHIFT_VERSION}-for-rhel-10-$DRIVER_ARCH-rpms || true
+            dnf config-manager --set-disabled rhocp-${OPENSHIFT_VERSION}-for-rhel-@@RHEL_MAJOR@@-$DRIVER_ARCH-rpms || true
         fi
     fi
 
-    dnf config-manager --set-enabled rhel-10-for-$DRIVER_ARCH-baseos-eus-rpms  || true
-    dnf config-manager --set-enabled rhel-10-for-$DRIVER_ARCH-appstream-eus-rpms  || true
+    dnf config-manager --set-enabled rhel-@@RHEL_MAJOR@@-for-$DRIVER_ARCH-baseos-eus-rpms  || true
+    dnf config-manager --set-enabled rhel-@@RHEL_MAJOR@@-for-$DRIVER_ARCH-appstream-eus-rpms  || true
     if ! dnf makecache --releasever=${DNF_RELEASEVER}; then
-    	dnf config-manager --set-disabled rhel-10-for-$DRIVER_ARCH-baseos-eus-rpms || true
-        dnf config-manager --set-disabled rhel-10-for-$DRIVER_ARCH-appstream-eus-rpms || true
+    	dnf config-manager --set-disabled rhel-@@RHEL_MAJOR@@-for-$DRIVER_ARCH-baseos-eus-rpms || true
+        dnf config-manager --set-disabled rhel-@@RHEL_MAJOR@@-for-$DRIVER_ARCH-appstream-eus-rpms || true
     fi
 
     # try with EUS disabled, if it does not work, then try just major version
@@ -165,13 +165,9 @@ _install_prerequisites() (
 
     if [ -z "$(<version)" ]; then
         echo "extract-vmlinux image extraction failed. Falling back to unzboot..."
-        if command -v unzboot >/dev/null 2>&1; then
-            unzboot /lib/modules/${KERNEL_VERSION}/vmlinuz vmlinuz.out
-            < vmlinuz.out strings | grep -E '^Linux version' | sed 's/^\(.*\)\s\+(.*)$/\1/' > version
-            rm vmlinuz.out
-        else
-            echo "unzboot is not installed."
-        fi
+        unzboot /lib/modules/${KERNEL_VERSION}/vmlinuz vmlinuz.out
+        < vmlinuz.out strings | grep -E '^Linux version' | sed 's/^\(.*\)\s\+(.*)$/\1/' > version
+        rm vmlinuz.out
     fi
 
     if [ -z "$(<version)" ]; then

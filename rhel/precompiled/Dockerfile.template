@@ -72,6 +72,8 @@ RUN export KVER=$(echo ${KERNEL_VERSION} | cut -d '-' -f 1) \
 
 FROM nvcr.io/nvidia/cuda:${CUDA_VERSION}-base-${CUDA_DIST}
 
+SHELL ["/bin/bash", "-c"]
+
 ARG BASE_URL='https://us.download.nvidia.com/tesla'
 
 ARG KERNEL_VERSION
@@ -142,7 +144,7 @@ RUN --mount=type=secret,id=RHSM_ORG,target=/run/secrets/RHSM_ORG \
     export DRIVER_STREAM=$(echo ${DRIVER_VERSION} | cut -d '.' -f 1) \
     && if [ "${DRIVER_STREAM_TYPE}" == "development" ] ; then \
         curl -sLOf ${BASE_URL}/${DRIVER_VERSION}/NVIDIA-Linux-${TARGET_ARCH}-${DRIVER_VERSION}.run \
-        sh ./NVIDIA-Linux-${TARGET_ARCH}-${DRIVER_VERSION}.run \
+        && sh ./NVIDIA-Linux-${TARGET_ARCH}-${DRIVER_VERSION}.run \
             --silent \
             --accept-license \
             --no-kernel-modules \
@@ -168,15 +170,15 @@ RUN --mount=type=secret,id=RHSM_ORG,target=/run/secrets/RHSM_ORG \
             dnf install -y nvidia-fabricmanager-${DRIVER_VERSION} libnvidia-nscq-${DRIVER_VERSION}; \
             else \
             dnf install -y nvidia-fabric-manager-${DRIVER_VERSION} libnvidia-nscq-${DRIVER_BRANCH}-${DRIVER_VERSION} ; \
-            fi \
+            fi ; \
             if [ "$DRIVER_BRANCH" -ge "580" ]; then \
-            dnf install -y nvidia-imex-${DRIVER_VERSION} libnvdsm-${DRIVER_VERSION}; \
+            dnf install -y nvidia-imex-${DRIVER_VERSION} libnvsdm-${DRIVER_VERSION}; \
             elif [ "$DRIVER_BRANCH" -ge "570" ]; then \
             dnf install -y nvidia-imex-${DRIVER_BRANCH}-${DRIVER_VERSION} libnvsdm-${DRIVER_BRANCH}-${DRIVER_VERSION} ; \
-            fi \
+            fi ; \
             if [ "$DRIVER_BRANCH" -ge "550" ]; then \
-            dnf install install -y infiniband-diags nvlsm ; \
-            fi \
+            dnf install -y infiniband-diags nvlsm ; \
+            fi ; \
         fi \
         && dnf clean all \
         && subscription-manager unregister ; \

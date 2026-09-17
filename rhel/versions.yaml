@@ -1,0 +1,16 @@
+# RHEL version configuration for the driver container generator.
+# Run 'make generate' after editing this file.
+#
+# To add a new RHEL version, append an entry and run 'make generate'.
+
+- major: "9"
+  base_image: registry.access.redhat.com/ubi9/ubi:9.8-1789646010
+  gpgkey_sum: d0664fbbdb8c32356d45de36c5984617217b2d0bef41b93ccecd326ba3b80c87
+  cuda_key_file: D42D0685.pub
+  precompiled: true
+
+- major: "10"
+  base_image: registry.access.redhat.com/ubi10/ubi:10.2-1789459392
+  gpgkey_sum: afbea87d3b979b3788ef34223aeeb323ade481128e2c133723ae99b8a51368bb
+  cuda_key_file: CDF6BA43.pub
+  precompiled: true

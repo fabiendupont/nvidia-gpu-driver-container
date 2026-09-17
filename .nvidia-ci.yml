@@ -173,11 +173,6 @@ image-ubuntu26.04:
     - .image-pull-ubuntu26.04
     - .dist-ubuntu26.04
 
-image-rhel8:
-  extends:
-    - .image-pull
-    - .dist-rhel8
-
 image-rhel9:
   extends:
     - .image-pull
@@ -187,11 +182,6 @@ image-rhel10:
   extends:
     - .image-pull-rhel10
     - .dist-rhel10
-
-image-rocky8:
-  extends:
-    - .image-pull
-    - .dist-rocky8
 
 image-rocky9:
   extends:
@@ -428,22 +418,6 @@ scan-precompiled-ubuntu22.04-amd64:
   needs:
     - image-precompiled-ubuntu22.04
 
-scan-rhel8-amd64:
-  extends:
-    - .scan
-    - .dist-rhel8
-    - .platform-amd64
-  needs:
-    - image-rhel8
-
-scan-rhel8-arm64:
-  extends:
-    - .scan
-    - .dist-rhel8
-    - .platform-arm64
-  needs:
-    - image-rhel8
-
 scan-rhel9-amd64:
   extends:
     - .scan
@@ -475,22 +449,6 @@ scan-rhel10-arm64:
     - .platform-arm64
   needs:
     - image-rhel10
-
-scan-rocky8-amd64:
-  extends:
-    - .scan
-    - .dist-rocky8
-    - .platform-amd64
-  needs:
-    - image-rocky8
-
-scan-rocky8-arm64:
-  extends:
-    - .scan
-    - .dist-rocky8
-    - .platform-arm64
-  needs:
-    - image-rocky8
 
 scan-rocky9-amd64:
   extends:
@@ -598,18 +556,6 @@ release:ngc-rhcos4.18:
   variables:
     OUT_DIST: "rhcos4.18"
 
-release:ngc-rhel8.10:
-  extends:
-    - .release:ngc
-    - .dist-rhel8
-  variables:
-    OUT_DIST: "rhel8.10"
-
-release:ngc-rhel8:
-  extends:
-    - .release:ngc
-    - .dist-rhel8
-
 release:ngc-rhel9.4:
   extends:
     - .release:ngc
@@ -642,11 +588,6 @@ release:ngc-rhel9:
   extends:
     - .release:ngc
     - .dist-rhel9
-
-release:ngc-rocky8:
-  extends:
-    - .release:ngc
-    - .dist-rocky8
 
 release:ngc-rocky9:
   extends:

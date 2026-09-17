@@ -1,52 +1,47 @@
 #!/bin/bash
-# Copyright (c) 2021-2023, NVIDIA CORPORATION. All rights reserved.
+# Copyright (c) 2021-2026, NVIDIA CORPORATION. All rights reserved.
 
 set -eu
 
 DRIVER_ARCH=${TARGETARCH/amd64/x86_64} && DRIVER_ARCH=${DRIVER_ARCH/arm64/aarch64}
 echo "DRIVER_ARCH is $DRIVER_ARCH"
+RHEL_MAJOR=$(. /etc/os-release && echo "${VERSION_ID%%.*}")
 
 dep_installer () {
-  if [ "$DRIVER_ARCH" = "x86_64" ]; then
-    dnf install -y \
-        libglvnd-glx \
-        ca-certificates \
-        curl-minimal \
-        gcc \
-        glibc.i686 \
-        make \
-        cpio \
-        kmod
-  elif [ "$DRIVER_ARCH" = "ppc64le" ]; then
-    dnf install -y \
-        libglvnd-glx \
-        ca-certificates \
-        curl-minimal \
-        gcc \
-        glibc \
-        make \
-        cpio \
-        kmod
-  elif [ "$DRIVER_ARCH" = "aarch64" ]; then
-    dnf install -y \
-        libglvnd-glx \
-        ca-certificates \
-        curl-minimal \
-        gcc \
-        glibc \
-        make \
-        cpio \
-        kmod
+  dnf install -y --setopt=install_weak_deps=False \
+      libglvnd-glx \
+      ca-certificates \
+      curl-minimal \
+      gcc \
+      glibc \
+      make \
+      cpio \
+      file \
+      kmod
+
+  # 32-bit glibc compat needed by nvidia-installer (dropped in RHEL 10)
+  if [ "$DRIVER_ARCH" = "x86_64" ] && [ "$RHEL_MAJOR" -lt 10 ]; then
+    dnf install -y --setopt=install_weak_deps=False glibc.i686
   fi
 
-  # Download unzboot as kernel images are compressed in the zboot format on RHEL 9 arm64
-  # unzboot is only available on the EPEL RPM repo
-  rpm --import  https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-9
-  dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
-  dnf config-manager --enable epel
-  dnf install -y unzboot
+  if ! dnf install -y 'dnf-command(config-manager)'; then
+    dnf install -y dnf5-plugins
+  fi
 
-  rm -rf /var/cache/yum/*
+  OS_RELEASE_ID=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
+  if [ "$OS_RELEASE_ID" = "rocky" ]; then
+    dnf config-manager --set-enabled crb
+  elif [ "$OS_RELEASE_ID" = "rhel" ]; then
+    dnf config-manager --set-enabled codeready-builder-for-rhel-@@RHEL_MAJOR@@-${DRIVER_ARCH}-rpms || true
+  fi
+
+  # unzboot is needed to decompress zboot-format kernel images at runtime
+  rpm --import https://dl.fedoraproject.org/pub/epel/RPM-GPG-KEY-EPEL-@@RHEL_MAJOR@@
+  dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-@@RHEL_MAJOR@@.noarch.rpm
+  dnf config-manager --enable epel
+  dnf install -y --setopt=install_weak_deps=False unzboot
+
+  dnf clean all
 }
 
 nvidia_installer () {
@@ -99,60 +94,53 @@ nvidia_installer () {
 }
 
 fabricmanager_install() {
-  dnf install -y nvidia-fabricmanager-${DRIVER_VERSION} nvidia-fabric-manager-devel-${DRIVER_VERSION}
+  dnf install -y --setopt=install_weak_deps=False nvidia-fabricmanager-${DRIVER_VERSION} nvidia-fabric-manager-devel-${DRIVER_VERSION}
   dnf versionlock add nvidia-fabricmanager nvidia-fabric-manager-devel
 }
 
 nscq_install() {
-  dnf install -y libnvidia-nscq-${DRIVER_VERSION}
+  dnf install -y --setopt=install_weak_deps=False libnvidia-nscq-${DRIVER_VERSION}
   dnf versionlock add libnvidia-nscq
 }
 
 # libnvsdm packages are not available for arm64
 nvsdm_install() {
   if [ "$TARGETARCH" = "amd64" ]; then
-    dnf install -y libnvsdm-${DRIVER_VERSION}
+    dnf install -y --setopt=install_weak_deps=False libnvsdm-${DRIVER_VERSION}
     dnf versionlock add libnvsdm
   fi
 }
 
 nvlink5_pkgs_install() {
-  dnf install -y infiniband-diags nvlsm
+  dnf install -y --setopt=install_weak_deps=False infiniband-diags nvlsm
 }
 
 imex_install() {
-  dnf install -y nvidia-imex-${DRIVER_VERSION}
+  dnf install -y --setopt=install_weak_deps=False nvidia-imex-${DRIVER_VERSION}
   dnf versionlock add nvidia-imex
 }
+
 extra_pkgs_install() {
   if [ "$DRIVER_TYPE" != "vgpu" ]; then
-      if [ "${DRIVER_BRANCH}" -ge "615" ]; then
-        DRIVER_MODULE_STREAM="${DRIVER_BRANCH}-open"
-      else
-        DRIVER_MODULE_STREAM="${DRIVER_BRANCH}-dkms"
-      fi
-      dnf module enable -y "nvidia-driver:${DRIVER_MODULE_STREAM}"
-      dnf install -y 'dnf-command(versionlock)'
+    # DNF module streams were removed in RHEL 10
+    if [ "$RHEL_MAJOR" -lt 10 ]; then
+      dnf module enable -y "nvidia-driver:${DRIVER_BRANCH}-open"
+    fi
+    dnf install -y 'dnf-command(versionlock)'
 
-      # If running on a RockyLinux base image, we enable the Code Ready Builder RPM repo (crb)
-      OS_RELEASE_ID=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
-      if [ "$OS_RELEASE_ID" = "rocky" ]; then
-        dnf config-manager --set-enabled crb
-      fi
-
-      fabricmanager_install
-      nscq_install
-      nvsdm_install
-      nvlink5_pkgs_install
-      imex_install
-      rm -rf /usr/share/doc/*
-      dnf clean all
+    fabricmanager_install
+    nscq_install
+    nvsdm_install
+    nvlink5_pkgs_install
+    imex_install
+    rm -rf /usr/share/doc/*
+    dnf clean all
   fi
 }
 
 setup_cuda_repo() {
     OS_ARCH=${TARGETARCH/amd64/x86_64} && OS_ARCH=${OS_ARCH/arm64/sbsa};
-    dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel9/${OS_ARCH}/cuda-rhel9.repo
+    dnf config-manager --add-repo https://developer.download.nvidia.com/compute/cuda/repos/rhel@@RHEL_MAJOR@@/${OS_ARCH}/cuda-rhel@@RHEL_MAJOR@@.repo
 }
 
 if [ "$1" = "nvinstall" ]; then

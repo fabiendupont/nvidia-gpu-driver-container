@@ -136,10 +136,6 @@ trigger-pipeline:
   variables:
     DIST: ubuntu26.04
 
-.dist-rhel8:
-  variables:
-    DIST: rhel8
-
 .dist-rhel9:
   variables:
     DIST: rhel9
@@ -147,10 +143,6 @@ trigger-pipeline:
 .dist-rhel10:
   variables:
     DIST: rhel10
-
-.dist-rocky8:
-  variables:
-    DIST: rocky8
 
 .dist-rocky9:
   variables:
@@ -271,14 +263,6 @@ trigger-pipeline:
   rules:
     - if: $CI_PIPELINE_SOURCE != "schedule" && $CI_COMMIT_TAG == null
 
-.release-rocky8:
-  # Perform for each DRIVER_VERSION
-  extends:
-    - .release-generic
-    - .driver-versions
-  rules:
-    - if: $CI_PIPELINE_SOURCE != "schedule" && $CI_COMMIT_TAG == null
-
 .release:
   # Perform for each DRIVER_VERSION
   extends:
@@ -338,15 +322,6 @@ trigger-pipeline:
 .release:staging-rhel10:
   extends:
     - .release-rhel10
-  variables:
-    OUT_REGISTRY_USER: "${NGC_REGISTRY_USER}"
-    OUT_REGISTRY_TOKEN: "${NGC_REGISTRY_TOKEN}"
-    OUT_REGISTRY: "${NGC_REGISTRY}"
-    OUT_IMAGE_NAME: "${NGC_STAGING_REGISTRY}/driver"
-
-.release:staging-rocky8:
-  extends:
-    - .release-rocky8
   variables:
     OUT_REGISTRY_USER: "${NGC_REGISTRY_USER}"
     OUT_REGISTRY_TOKEN: "${NGC_REGISTRY_TOKEN}"
@@ -423,26 +398,12 @@ release:staging-ubuntu26.04:
   needs:
     - image-ubuntu26.04
 
-release:staging-rhel8:
-  extends:
-    - .release:staging
-    - .dist-rhel8
-  needs:
-    - image-rhel8
-
 release:staging-rhel9:
   extends:
     - .release:staging
     - .dist-rhel9
   needs:
     - image-rhel9
-
-release:staging-rocky8:
-  extends:
-    - .release:staging
-    - .dist-rocky8
-  needs:
-    - image-rocky8
 
 #release:staging-rhel10:
 #  extends:

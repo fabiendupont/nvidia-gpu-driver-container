@@ -55,7 +55,6 @@ driver_container_build_ubuntu()
 
 driver_container_build_rhel()
 {
-  driver_container_build_simple "rhel8"
   driver_container_build_simple "rhel9"
   driver_container_build_simple "rhel10"
 }

@@ -99,11 +99,6 @@ image-ubuntu26.04:
     - .image-build-ubuntu26.04
     - .dist-ubuntu26.04
 
-image-rhel8:
-  extends:
-    - .image-build
-    - .dist-rhel8
-
 image-rhel9:
   extends:
     - .image-build-rhel9

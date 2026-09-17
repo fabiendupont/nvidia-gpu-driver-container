@@ -164,17 +164,8 @@ for version in ${UBUNTU_VERSIONS}; do
   fi
 done
 
-build "rhel8" "${CONTAINER_VERSION}-rhel8" "$(mk_short_version rhel8)" ""
 build "rhel9" "${CONTAINER_VERSION}-rhel9" "$(mk_short_version rhel9)" ""
 build "rhel10" "${CONTAINER_VERSION}-rhel10" "$(mk_short_version rhel10)" ""
-
-# Add rhcos tags
-docker pull "${REGISTRY}:${CONTAINER_VERSION}-rhel8"
-
-for tag in "4.1" "4.2" "4.3" "4.4"; do
-	docker tag "${REGISTRY}:${CONTAINER_VERSION}-rhel8" "${REGISTRY}:${DRIVER_VERSION}-rhcos${tag}"
-	docker push "${REGISTRY}:${DRIVER_VERSION}-rhcos${tag}"
-done
 
 docker container prune
 docker image prune -a
