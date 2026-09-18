@@ -1,0 +1,18 @@
+# Ubuntu version configuration for the driver container generator.
+# Run 'make generate' after editing this file.
+#
+# ubuntu 26.04 uses a different install architecture (DKMS packages instead of .run
+# installer) and is not generated from shared templates — its files live in ubuntu/26.04/
+# as static sources alongside the version-specific scripts for 22.04 and 24.04.
+
+- version: "22.04"
+  codename: jammy
+  base_image: ubuntu:jammy-20260901.2
+  cuda_version_nodot: "2204"
+  driver_branch: "580"
+
+- version: "24.04"
+  codename: noble
+  base_image: ubuntu:noble-20260911
+  cuda_version_nodot: "2404"
+  driver_branch: "550"

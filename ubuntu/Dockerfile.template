@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=ubuntu:resolute-20260912
+ARG BASE_IMAGE=@@BASE_IMAGE@@
 
 FROM ${BASE_IMAGE} AS build
 
@@ -12,6 +12,9 @@ ENV DRIVER_TYPE=$DRIVER_TYPE
 SHELL ["/bin/bash", "-c"]
 
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
+
+# Remove cuda repository to avoid GPG errors
+RUN rm -f /etc/apt/sources.list.d/cuda*
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         apt-utils \
@@ -41,6 +44,7 @@ FROM ${BASE_IMAGE}
 
 SHELL ["/bin/bash", "-c"]
 
+ARG BASE_URL=https://us.download.nvidia.com/tesla
 ARG TARGETARCH
 ENV TARGETARCH=$TARGETARCH
 ARG DRIVER_VERSION
@@ -51,11 +55,11 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Arg to indicate if driver type is either of passthrough(baremetal) or vgpu
 ARG DRIVER_TYPE=passthrough
 ENV DRIVER_TYPE=$DRIVER_TYPE
-ARG DRIVER_BRANCH=595
+ARG DRIVER_BRANCH=@@DRIVER_BRANCH@@
 ENV DRIVER_BRANCH=$DRIVER_BRANCH
 ARG VGPU_LICENSE_SERVER_TYPE=NLS
 ENV VGPU_LICENSE_SERVER_TYPE=$VGPU_LICENSE_SERVER_TYPE
-# Enable vGPU version compability check by default
+# Enable vGPU version compatibility check by default
 ARG DISABLE_VGPU_VERSION_CHECK=true
 ENV DISABLE_VGPU_VERSION_CHECK=$DISABLE_VGPU_VERSION_CHECK
 ENV NVIDIA_VISIBLE_DEVICES=void
@@ -67,17 +71,15 @@ RUN echo "TARGETARCH=$TARGETARCH"
 ADD install.sh /tmp
 
 RUN usermod -o -u 0 -g 0 _apt && \
-    /tmp/install.sh depinstall
-
-# Install the driver payload for passthrough/baremetal types; the vgpu type installs from a
-# .run file at container start
-RUN /tmp/install.sh driver_pkgs_install
+    bash /tmp/install.sh depinstall
 
 COPY nvidia-driver /usr/local/bin
 
 COPY --from=build /work/vgpu-util* /usr/local/bin
 
 ADD drivers drivers/
+
+RUN bash /tmp/install.sh driver_pkgs_install
 
 WORKDIR  /drivers
 
@@ -88,7 +90,7 @@ RUN if [ -n "${CVE_UPDATES}" ]; then \
         rm -rf /var/lib/apt/lists/*; \
     fi
 
-ARG DIST=ubuntu26.04
+ARG DIST=@@UBUNTU_VERSION@@
 ARG BUILD_TIMESTAMP
 
 LABEL io.k8s.display-name="NVIDIA Driver Container"

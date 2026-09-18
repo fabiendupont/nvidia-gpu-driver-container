@@ -87,6 +87,7 @@ endif
 .PHONY: generate
 generate:
 	python3 $(CURDIR)/scripts/generate-rhel-dockerfiles.py
+	python3 $(CURDIR)/scripts/generate-ubuntu-dockerfiles.py
 
 pull-%: DIST = $(word 2,$(subst -, ,$@))
 pull-%: DRIVER_VERSION = $(word 3,$(subst -, ,$@))
@@ -206,23 +207,33 @@ build-rocky10%: generate
 build-rocky10%: SUBDIR = rhel/10
 build-rocky10%: DOCKER_BUILD_ARGS = --build-arg BASE_IMAGE=rockylinux/rockylinux:10.2-ubi
 
+build-ubuntu22.04%: generate
+build-ubuntu22.04%: SUBDIR = ubuntu/22.04
+build-ubuntu24.04%: generate
+build-ubuntu24.04%: SUBDIR = ubuntu/24.04
+build-ubuntu26.04%: generate
+build-ubuntu26.04%: SUBDIR = ubuntu/26.04
+
 # ubuntu22.04 Precompiled Driver
+build-signed_ubuntu22.04%: generate
 build-signed_ubuntu22.04%: DIST = ubuntu22.04
-build-signed_ubuntu22.04%: SUBDIR = ubuntu22.04/precompiled
+build-signed_ubuntu22.04%: SUBDIR = ubuntu/22.04/precompiled
 build-signed_ubuntu22.04%: DRIVER_TAG = $(DRIVER_BRANCH)
 build-signed_ubuntu22.04%: IMAGE_TAG = $(if $(VERSION),$(VERSION)-)$(DRIVER_BRANCH)-$(KERNEL_VERSION)-$(DIST)
 build-signed_ubuntu22.04%: DOCKER_BUILD_ARGS =  --build-arg KERNEL_VERSION="$(KERNEL_VERSION)"
 
 # ubuntu24.04 Precompiled Driver
+build-signed_ubuntu24.04%: generate
 build-signed_ubuntu24.04%: DIST = ubuntu24.04
-build-signed_ubuntu24.04%: SUBDIR = ubuntu24.04/precompiled
+build-signed_ubuntu24.04%: SUBDIR = ubuntu/24.04/precompiled
 build-signed_ubuntu24.04%: DRIVER_TAG = $(DRIVER_BRANCH)
 build-signed_ubuntu24.04%: IMAGE_TAG = $(if $(VERSION),$(VERSION)-)$(DRIVER_BRANCH)-$(KERNEL_VERSION)-$(DIST)
 build-signed_ubuntu24.04%: DOCKER_BUILD_ARGS =  --build-arg KERNEL_VERSION="$(KERNEL_VERSION)"
 
 # ubuntu26.04 Precompiled Driver
+build-signed_ubuntu26.04%: generate
 build-signed_ubuntu26.04%: DIST = ubuntu26.04
-build-signed_ubuntu26.04%: SUBDIR = ubuntu26.04/precompiled
+build-signed_ubuntu26.04%: SUBDIR = ubuntu/26.04/precompiled
 build-signed_ubuntu26.04%: DRIVER_TAG = $(DRIVER_BRANCH)
 build-signed_ubuntu26.04%: IMAGE_TAG = $(if $(VERSION),$(VERSION)-)$(DRIVER_BRANCH)-$(KERNEL_VERSION)-$(DIST)
 build-signed_ubuntu26.04%: DOCKER_BUILD_ARGS =  --build-arg KERNEL_VERSION="$(KERNEL_VERSION)"

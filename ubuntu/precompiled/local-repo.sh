@@ -23,45 +23,27 @@ download_apt_with_dep () {
 }
 
 nvlink5_pkgs_download() {
-  if [ "$DRIVER_BRANCH" -ge "570" ]; then
-    download_apt_with_dep nvlsm
-    download_apt_with_dep infiniband-diags
-  fi
+  download_apt_with_dep nvlsm
+  download_apt_with_dep infiniband-diags
 }
 
 # libnvsdm packages are not available for arm64
 nvsdm_download() {
   if [ "$TARGETARCH" = "amd64" ]; then
-    if [ "$DRIVER_BRANCH" -ge "580" ]; then
-       download_apt_with_dep libnvsdm ${DRIVER_VERSION}*
-    elif [ "$DRIVER_BRANCH" -ge "560" ]; then
-       download_apt_with_dep libnvsdm-${DRIVER_BRANCH} ${DRIVER_VERSION}*
-    fi
+    download_apt_with_dep libnvsdm ${DRIVER_VERSION}*
   fi
 }
 
 fabricmanager_download() {
-  if [ "$DRIVER_BRANCH" -ge "580" ]; then
-    download_apt_with_dep nvidia-fabricmanager ${DRIVER_VERSION}*
-  else
-    download_apt_with_dep nvidia-fabricmanager-${DRIVER_BRANCH} ${DRIVER_VERSION}*
-  fi
+  download_apt_with_dep nvidia-fabricmanager ${DRIVER_VERSION}*
 }
 
 nscq_download() {
-  if [ "$DRIVER_BRANCH" -ge "580" ]; then
-     download_apt_with_dep libnvidia-nscq ${DRIVER_VERSION}*
-  else
-    download_apt_with_dep libnvidia-nscq-${DRIVER_BRANCH} ${DRIVER_VERSION}*
-  fi
+  download_apt_with_dep libnvidia-nscq ${DRIVER_VERSION}*
 }
 
 imex_download() {
-  if [ "$DRIVER_BRANCH" -ge "580" ]; then
-    download_apt_with_dep nvidia-imex ${DRIVER_VERSION}*
-  elif [ "$DRIVER_BRANCH" -ge "550" ]; then
-    download_apt_with_dep nvidia-imex-${DRIVER_BRANCH} ${DRIVER_VERSION}*
-  fi
+  download_apt_with_dep nvidia-imex ${DRIVER_VERSION}*
 }
 
 download_driver_package_deps () {
@@ -69,7 +51,11 @@ download_driver_package_deps () {
   pushd ${LOCAL_REPO_DIR}
 
   download_apt_with_dep linux-objects-nvidia-${DRIVER_BRANCH}-server-${KERNEL_VERSION}
-  download_apt_with_dep linux-signatures-nvidia-${KERNEL_VERSION}
+  # linux-signatures-nvidia (secure boot signatures) is not available for arm64
+  if [ "$TARGETARCH" = "amd64" ]; then
+    download_apt_with_dep linux-signatures-nvidia-${KERNEL_VERSION}
+  fi
+
   download_apt_with_dep linux-modules-nvidia-${DRIVER_BRANCH}-server-${KERNEL_VERSION}
   download_apt_with_dep linux-modules-nvidia-${DRIVER_BRANCH}-server-open-${KERNEL_VERSION}
   download_apt_with_dep nvidia-utils-${DRIVER_BRANCH}-server
@@ -77,7 +63,10 @@ download_driver_package_deps () {
   download_apt_with_dep libnvidia-decode-${DRIVER_BRANCH}-server
   download_apt_with_dep libnvidia-extra-${DRIVER_BRANCH}-server
   download_apt_with_dep libnvidia-encode-${DRIVER_BRANCH}-server
-  download_apt_with_dep libnvidia-fbc1-${DRIVER_BRANCH}-server
+  # libnvidia-fbc1 (FrameBuffer Capture) is not available for arm64
+  if [ "$TARGETARCH" = "amd64" ]; then
+    download_apt_with_dep libnvidia-fbc1-${DRIVER_BRANCH}-server
+  fi
   download_apt_with_dep libnvidia-gl-${DRIVER_BRANCH}-server
 
   fabricmanager_download

@@ -22,6 +22,15 @@ dep_install () {
             libglvnd-dev \
             pkg-config && \
         rm -rf /var/lib/apt/lists/*
+        # HWE kernels 5.19.x and 6.5.x on Ubuntu 22.04 (jammy) require gcc-12 to compile kernel modules
+        . /etc/os-release
+        if [ "${VERSION_CODENAME}" = "jammy" ]; then
+            apt-get update && \
+                apt-get install -y --no-install-recommends gcc-12 g++-12 && \
+                update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-12 12 && \
+                update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-12 12 && \
+                rm -rf /var/lib/apt/lists/*
+        fi
     elif [ "$TARGETARCH" = "arm64" ]; then
         dpkg --add-architecture arm64 && \
             apt-get update && apt-get install -y \
@@ -40,12 +49,12 @@ dep_install () {
 setup_cuda_repo() {
     # Fetch public CUDA GPG key and configure apt to only use this key when downloading CUDA packages
     OS_ARCH=${TARGETARCH/amd64/x86_64} && OS_ARCH=${OS_ARCH/arm64/sbsa};
-    curl -fSsL "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/${OS_ARCH}/cuda-keyring_1.1-1_all.deb" -o cuda-keyring_1.1-1_all.deb
+    curl -fSsL "https://developer.download.nvidia.com/compute/cuda/repos/ubuntu@@CUDA_VERSION_NODOT@@/${OS_ARCH}/cuda-keyring_1.1-1_all.deb" -o cuda-keyring_1.1-1_all.deb
     dpkg -i cuda-keyring_1.1-1_all.deb
 }
 
 fabricmanager_install() {
-  apt-get install -y --no-install-recommends\
+  apt-get install -y --no-install-recommends \
       nvidia-fabricmanager=${DRIVER_VERSION}* \
       nvidia-fabricmanager-dev=${DRIVER_VERSION}*
   apt-mark hold nvidia-fabricmanager nvidia-fabricmanager-dev
@@ -79,11 +88,7 @@ extra_pkgs_install() {
 
       fabricmanager_install
       nscq_install
-
-      if [ "$TARGETARCH" = "amd64" ]; then
-        nvsdm_install
-      fi
-
+      nvsdm_install
       nvlink5_pkgs_install
       imex_install
 
@@ -91,14 +96,21 @@ extra_pkgs_install() {
   fi
 }
 
+driver_pkgs_install() {
+    if [ "$DRIVER_TYPE" = "vgpu" ]; then
+        return 0
+    fi
+    setup_cuda_repo
+    pushd /drivers
+    download_installer
+    popd
+    extra_pkgs_install
+}
+
 if [ "$1" = "depinstall" ]; then
   dep_install
-elif [ "$1" = "download_installer" ]; then
-  download_installer
-elif [ "$1" = "extra_pkgs_install" ]; then
-  extra_pkgs_install
-elif [ "$1" = "setup_cuda_repo" ]; then
-  setup_cuda_repo
+elif [ "$1" = "driver_pkgs_install" ]; then
+  driver_pkgs_install
 else
   echo "Unknown function: $1"
   exit 1

@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=ubuntu:noble-20260911
+ARG BASE_IMAGE=ubuntu:resolute-20260912
 
 FROM ${BASE_IMAGE} AS build
 
@@ -13,9 +13,6 @@ SHELL ["/bin/bash", "-c"]
 
 RUN echo 'debconf debconf/frontend select Noninteractive' | debconf-set-selections
 
-# Remove cuda repository to avoid GPG errors
-RUN rm -f /etc/apt/sources.list.d/cuda*
-
 RUN apt-get update && apt-get install -y --no-install-recommends \
         apt-utils \
         build-essential \
@@ -24,8 +21,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         git  \
         wget && \
     rm -rf /var/lib/apt/lists/*
-
-
 
 # download appropriate binary based on the target architecture for multi-arch builds
 RUN OS_ARCH=${TARGETARCH/x86_64/amd64} && OS_ARCH=${OS_ARCH/aarch64/arm64} && \
@@ -46,7 +41,6 @@ FROM ${BASE_IMAGE}
 
 SHELL ["/bin/bash", "-c"]
 
-ARG BASE_URL=https://us.download.nvidia.com/tesla
 ARG TARGETARCH
 ENV TARGETARCH=$TARGETARCH
 ARG DRIVER_VERSION
@@ -57,7 +51,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 # Arg to indicate if driver type is either of passthrough(baremetal) or vgpu
 ARG DRIVER_TYPE=passthrough
 ENV DRIVER_TYPE=$DRIVER_TYPE
-ARG DRIVER_BRANCH=550
+ARG DRIVER_BRANCH=595
 ENV DRIVER_BRANCH=$DRIVER_BRANCH
 ARG VGPU_LICENSE_SERVER_TYPE=NLS
 ENV VGPU_LICENSE_SERVER_TYPE=$VGPU_LICENSE_SERVER_TYPE
@@ -73,7 +67,7 @@ RUN echo "TARGETARCH=$TARGETARCH"
 ADD install.sh /tmp
 
 RUN usermod -o -u 0 -g 0 _apt && \
-    /tmp/install.sh depinstall && /tmp/install.sh setup_cuda_repo
+    bash /tmp/install.sh depinstall
 
 COPY nvidia-driver /usr/local/bin
 
@@ -81,12 +75,9 @@ COPY --from=build /work/vgpu-util* /usr/local/bin
 
 ADD drivers drivers/
 
-# Fetch the installer, fabricmanager and libnvidia-nscq automatically for passthrough/baremetal types
-RUN if [ "$DRIVER_TYPE" != "vgpu" ]; then \
-    cd drivers && \
-    /tmp/install.sh download_installer; fi
-
-RUN /tmp/install.sh extra_pkgs_install
+# Install the driver payload for passthrough/baremetal types; the vgpu type installs from a
+# .run file at container start
+RUN bash /tmp/install.sh driver_pkgs_install
 
 WORKDIR  /drivers
 
@@ -97,7 +88,7 @@ RUN if [ -n "${CVE_UPDATES}" ]; then \
         rm -rf /var/lib/apt/lists/*; \
     fi
 
-ARG DIST=ubuntu24.04
+ARG DIST=ubuntu26.04
 ARG BUILD_TIMESTAMP
 
 LABEL io.k8s.display-name="NVIDIA Driver Container"

@@ -75,9 +75,7 @@
             ],
             "matchFileNames": [
                 "base/Dockerfile",
-                "ubuntu22.04/**",
-                "ubuntu24.04/**",
-                "ubuntu26.04/**"
+                "ubuntu/versions.yaml"
             ],
             "groupName": "Ubuntu base images",
             "groupSlug": "ubuntu-base-images",
@@ -124,48 +122,22 @@
             "matchCurrentValue": "/^resolute/",
             "allowedVersions": "/^resolute(-\\d{8}(\\.\\d+)?)?$/"
         },
-        {
-            "matchDatasources": [
-                "docker"
-            ],
-            "matchPackageNames": [
-                "ubuntu"
-            ],
-            "matchFileNames": [
-                "ubuntu22.04/**"
-            ],
-            "allowedVersions": "/^jammy(-\\d{8}(\\.\\d+)?)?$/"
-        },
-        {
-            "matchDatasources": [
-                "docker"
-            ],
-            "matchPackageNames": [
-                "ubuntu"
-            ],
-            "matchFileNames": [
-                "ubuntu24.04/**"
-            ],
-            "allowedVersions": "/^noble(-\\d{8}(\\.\\d+)?)?$/"
-        },
-        {
-            "matchDatasources": [
-                "docker"
-            ],
-            "matchPackageNames": [
-                "ubuntu"
-            ],
-            "matchFileNames": [
-                "ubuntu26.04/**"
-            ],
-            "allowedVersions": "/^resolute(-\\d{8}(\\.\\d+)?)?$/"
-        }
     ],
     "customManagers": [
         {
             "customType": "regex",
             "managerFilePatterns": [
                 "rhel/versions.yaml"
+            ],
+            "matchStrings": [
+                "base_image:\\s*(?<depName>[^:]+):(?<currentValue>[^\\s]+)"
+            ],
+            "datasourceTemplate": "docker"
+        },
+        {
+            "customType": "regex",
+            "managerFilePatterns": [
+                "ubuntu/versions.yaml"
             ],
             "matchStrings": [
                 "base_image:\\s*(?<depName>[^:]+):(?<currentValue>[^\\s]+)"

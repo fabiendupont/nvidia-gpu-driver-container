@@ -1,4 +1,4 @@
-ARG BASE_IMAGE=ubuntu:noble-20260911
+ARG BASE_IMAGE=@@BASE_IMAGE@@
 FROM ${BASE_IMAGE}
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -6,9 +6,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 ARG BASE_URL=https://us.download.nvidia.com/tesla
 ARG TARGETARCH
 ENV TARGETARCH=$TARGETARCH
-ARG DRIVER_BRANCH=550
+ARG DRIVER_BRANCH=@@DRIVER_BRANCH@@
 ENV DRIVER_BRANCH=$DRIVER_BRANCH
-ARG DRIVER_VERSION=550.90.12
+ARG DRIVER_VERSION=@@DRIVER_BRANCH@@.0.00
 ENV DRIVER_VERSION=$DRIVER_VERSION
 
 ARG KERNEL_VERSION=6.8.0-44-generic
@@ -37,7 +37,7 @@ RUN if [ "$TARGETARCH" = "amd64" ]; then dpkg --add-architecture i386; fi && \
 # Fetch GPG keys for CUDA repo (architecture-specific)
 RUN CUDA_ARCH=$([ "$TARGETARCH" = "arm64" ] && echo "sbsa" || echo "x86_64") && \
     rm -f /etc/apt/sources.list.d/cuda* && \
-    curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/${CUDA_ARCH}/cuda-keyring_1.1-1_all.deb -o cuda-keyring_1.1-1_all.deb && \
+    curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu@@CUDA_VERSION_NODOT@@/${CUDA_ARCH}/cuda-keyring_1.1-1_all.deb -o cuda-keyring_1.1-1_all.deb && \
     dpkg -i cuda-keyring_1.1-1_all.deb && \
     rm -f cuda-keyring_1.1-1_all.deb
 
@@ -63,7 +63,7 @@ RUN mkdir -p /usr/local/repos && \
 
 WORKDIR  /drivers
 
-ARG DIST=ubuntu24.04
+ARG DIST=@@UBUNTU_VERSION@@
 ARG BUILD_TIMESTAMP
 
 LABEL io.k8s.display-name="NVIDIA Driver Container"
